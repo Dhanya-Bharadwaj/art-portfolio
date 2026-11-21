@@ -4,3 +4,4 @@ __pycache__/
 serviceAccountKey.json
 data/messages.jsonl
 data/state.json
+README.md
