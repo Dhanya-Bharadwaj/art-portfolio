@@ -1,0 +1,172 @@
+[
+  {
+    "id": "miniatures-food",
+    "title": "Food",
+    "price": 100,
+    "stock": 1,
+    "type": "Original",
+    "hidden": false,
+    "category": "Miniatures",
+    "group": "Food",
+    "medium": "Handmade miniature",
+    "description": "A handmade miniature, crafted with tiny details and lots of patience.",
+    "accent": "#F8C8DC",
+    "ratio": 1.0,
+    "image": "/art_images/miniatures/food/chocolate.jpg",
+    "images": [
+      "/art_images/miniatures/food/chocolate.jpg",
+      "/art_images/miniatures/food/dosa.jpg",
+      "/art_images/miniatures/food/idli.jpg",
+      "/art_images/miniatures/food/pavbhaji.jpg",
+      "/art_images/miniatures/food/pizza.jpg",
+       "/art_images/miniatures/food/foods.jpg"
+    ],
+    "added": "2026-11-20T13:56:45.739142+00:00",
+    "order": 0
+  },
+  {
+    "id": "miniatures-table-stands-mini-library",
+    "title": "Mini Library",
+    "price": 1600,
+    "stock": 1,
+    "type": "Original",
+    "hidden": false,
+    "category": "Miniatures",
+    "group": "Table Stands",
+    "medium": "Handmade miniature",
+    "description": "A handmade miniature, crafted with tiny details and lots of patience.",
+    "accent": "#BFE8DA",
+    "ratio": 1.0,
+    "image": "/art_images/miniatures/table-stands/mini_library/mini_library.jpg",
+    "images": [
+      "/art_images/miniatures/table-stands/mini_library/mini_library.jpg"
+    ],
+    "added": "2026-11-20T13:56:45.739142+00:00",
+    "order": 1
+  },
+  {
+    "id": "miniatures-table-stands-mini-shelf",
+    "title": "Mini Shelf",
+    "price": 350,
+    "stock": 1,
+    "type": "Original",
+    "hidden": false,
+    "category": "Miniatures",
+    "group": "Table Stands",
+    "medium": "Handmade miniature",
+    "description": "A handmade miniature, crafted with tiny details and lots of patience.",
+    "accent": "#CDBEF5",
+    "ratio": 1.0,
+    "image": "/art_images/miniatures/table-stands/mini_shelf/yellow_stand.jpg",
+    "images": [
+      "/art_images/miniatures/table-stands/mini_shelf/yellow_stand.jpg",
+      "/art_images/miniatures/table-stands/mini_shelf/blue_stand.jpg",
+      "/art_images/miniatures/table-stands/mini_shelf/purple_stand.jpg",
+      "/art_images/miniatures/table-stands/mini_shelf/table_stands.jpg"
+    ],
+    "added": "2026-11-20T13:56:45.739142+00:00",
+    "order": 2
+  },
+  {
+    "id": "miniatures-table-stands-scooties",
+    "title": "Scooties",
+    "price": 100,
+    "stock": 1,
+    "type": "Original",
+    "hidden": false,
+    "category": "Miniatures",
+    "group": "Table Stands",
+    "medium": "Handmade miniature",
+    "description": "A handmade miniature, crafted with tiny details and lots of patience.",
+    "accent": "#BFDDF7",
+    "ratio": 1.0,
+    "image": "/art_images/miniatures/table-stands/scooties/Scooties.jpeg",
+    "images": [
+      "/art_images/miniatures/table-stands/scooties/Scooties.jpeg"
+    ],
+    "added": "2026-11-20T13:56:45.741328+00:00",
+    "order": 3
+  },
+  {
+    "id": "mandala-art-blue-clock",
+    "title": "Blue Clock",
+    "price": 800,
+    "stock": 1,
+    "type": "Original",
+    "hidden": false,
+    "category": "Mandala Art",
+    "group": "",
+    "medium": "Dot mandala",
+    "description": "A hand-painted dot mandala, made one dot at a time.",
+    "accent": "#FFE6A8",
+    "ratio": 1.0,
+    "image": "/art_images/mandala_art/blue_clock.jpeg",
+    "images": [
+      "/art_images/mandala_art/blue_clock.jpeg"
+    ],
+    "added": "2026-11-20T13:56:45.739142+00:00",
+    "order": 4
+  },
+  {
+    "id": "mandala-art-brown-clock",
+    "title": "Brown Clock",
+    "price": 2500,
+    "stock": 1,
+    "type": "Original",
+    "hidden": false,
+    "category": "Mandala Art",
+    "group": "",
+    "medium": "Dot mandala",
+    "description": "A hand-painted dot mandala, made one dot at a time.",
+    "accent": "#FFD3C2",
+    "ratio": 1.0,
+    "image": "/art_images/dot_mandala_art/brown_clock.jpeg",
+    "images": [
+      "/art_images/mandala_art/brown_clock.jpeg"
+    ],
+    "added": "2026-11-20T13:56:45.739142+00:00",
+    "order": 5
+  },
+  {
+    "id": "mandala-art-red-n-gold-clock",
+    "title": "Red & Gold Clock",
+    "price": 2000,
+    "stock": 1,
+    "type": "Original",
+    "hidden": false,
+    "category": "Mandala Art",
+    "group": "",
+    "medium": "Dot mandala",
+    "description": "A hand-painted dot mandala, made one dot at a time.",
+    "accent": "#F8C8DC",
+    "ratio": 1.0,
+    "image": "/art_images/mandala_art/red_n_gold_clock.jpg",
+    "images": [
+      "/art_images/mandala_art/red_n_gold_clock.jpg"
+    ],
+    "added": "2026-11-20T13:56:45.739142+00:00",
+    "order": 6
+  },
+  {
+    "id": "resin-chess",
+    "title": "Chess",
+    "price": 2500,
+    "stock": 1,
+    "type": "Original",
+    "hidden": false,
+    "category": "Resin",
+    "group": "Chess",
+    "medium": "Resin art",
+    "description": "Handcrafted resin art, poured and finished by hand.",
+    "accent": "#BFE8DA",
+    "ratio": 1.0,
+    "image": "/art_images/resin/chess/chess1.jpg",
+    "images": [
+      "/art_images/resin/chess/chess1.jpg",
+      "/art_images/resin/chess/chess2.jpg",
+      "/art_images/resin/chess/chess3.jpg"
+    ],
+    "added": "2026-11-20T13:56:45.741328+00:00",
+    "order": 7
+  }
+]
