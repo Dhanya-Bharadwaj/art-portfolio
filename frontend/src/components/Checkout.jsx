@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { createOrder, loadRazorpay, verifyOrder } from "../api";
 import { artist } from "../config";
 import { useCart } from "../cart";
-import { money } from "../format";
+import { STATES, money } from "../format";
 
 const EMPTY = { name: "", email: "", phone: "", address: "", city: "", state: "", pincode: "" };
 
@@ -18,8 +18,8 @@ const FIELDS = [
 ];
 
 export default function Checkout() {
-  const { lines, subtotal, shipping, total, freeShip, shop, clear, closeCheckout } = useCart();
-  const [form, setForm] = useState(EMPTY);
+  const { lines, subtotal, shipping, shippingKnown, shipState, setShipState, total, freeShip, shop, clear, closeCheckout } = useCart();
+  const [form, setForm] = useState({ ...EMPTY, state: shipState });
   const [step, setStep] = useState("details"); // details | demo | done
   const [order, setOrder] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -37,7 +37,11 @@ export default function Checkout() {
     };
   }, [closeCheckout]);
 
-  const update = (k) => (e) => setForm({ ...form, [k]: e.target.value });
+  const update = (k) => (e) => {
+    const value = e.target.value;
+    setForm((f) => ({ ...f, [k]: value }));
+    if (k === "state") setShipState(value); // the shipping charge follows the state
+  };
 
   const finish = async (orderId, payload) => {
     setBusy(true);
@@ -56,6 +60,7 @@ export default function Checkout() {
 
   const start = async () => {
     setError("");
+    if (!form.state) return setError("Please choose your state so we can work out the shipping.");
     if (Object.values(form).some((v) => !v.trim())) return setError("Please fill in all the fields.");
     if (!/^\S+@\S+\.\S+$/.test(form.email)) return setError("That email doesn't look right.");
     setBusy(true);
@@ -123,7 +128,14 @@ export default function Checkout() {
                         {FIELDS.map(([key, label, auto, type, span]) => (
                           <label key={key} className={span}>
                             {label}
-                            <input value={form[key]} onChange={update(key)} autoComplete={auto} type={type} inputMode={key === "pincode" ? "numeric" : undefined} maxLength={key === "address" ? 300 : 80} />
+                            {key === "state" ? (
+                              <select value={form.state} onChange={update("state")} autoComplete={auto}>
+                                <option value="">Select your state</option>
+                                {STATES.map((s) => <option key={s} value={s}>{s}</option>)}
+                              </select>
+                            ) : (
+                              <input value={form[key]} onChange={update(key)} autoComplete={auto} type={type} inputMode={key === "pincode" ? "numeric" : undefined} maxLength={key === "address" ? 300 : 80} />
+                            )}
                           </label>
                         ))}
                       </div>
@@ -149,19 +161,24 @@ export default function Checkout() {
                   </ul>
                   <dl className="totals">
                     <div><dt>Subtotal</dt><dd>{m(subtotal)}</dd></div>
-                    <div><dt>Shipping</dt><dd>{freeShip ? "Free" : m(shipping)}</dd></div>
-                    <div className="grand"><dt>Total</dt><dd>{m(total)}</dd></div>
+                    <div><dt>Shipping</dt><dd>{freeShip ? "Free" : shippingKnown ? m(shipping) : "Choose your state"}</dd></div>
+                    <div className="grand"><dt>Total</dt><dd>{shippingKnown ? m(total) : `${m(subtotal)} + shipping`}</dd></div>
                   </dl>
+                  {!freeShip && (
+                    <p className="ship-note">
+                      Shipping is {m(shop.shipping_fee)} within {shop.home_state ?? "Karnataka"} and {m(shop.shipping_fee_other ?? 350)} to other states.
+                    </p>
+                  )}
                   {step === "details" && (
                     <button className="btn wide" onClick={start} disabled={busy}>
-                      {busy ? "Please wait…" : `Pay ${m(total)}`}
+                      {busy ? "Please wait…" : shippingKnown ? `Pay ${m(total)}` : "Pay now"}
                     </button>
                   )}
                 </aside>
               </div>
               {step === "details" && (
                 <div className="co-paybar">
-                  <div><small>Total</small><strong>{m(total)}</strong></div>
+                  <div><small>{shippingKnown ? "Total" : "Subtotal"}</small><strong>{m(shippingKnown ? total : subtotal)}</strong></div>
                   <button className="btn" onClick={start} disabled={busy}>{busy ? "Please wait…" : "Pay now"}</button>
                 </div>
               )}

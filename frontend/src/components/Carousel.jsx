@@ -15,7 +15,12 @@ export default function Carousel({ artworks }) {
   const drag = useRef({ down: false, x: 0, left: 0, moved: false });
   const [progress, setProgress] = useState(0);
 
-  const items = [...artworks].sort((a, b) => (b.added || "").localeCompare(a.added || "") || a.order - b.order).slice(0, 8);
+  // Pieces you can still buy come first, most popular at the front (sales count most, then
+  // add-to-cart, then views). Sold pieces follow. Until people have looked at anything every
+  // piece scores 0, and the newest pieces come first, as before.
+  const items = [...artworks]
+    .sort((a, b) => (b.stock > 0) - (a.stock > 0) || (b.popularity || 0) - (a.popularity || 0) || (b.added || "").localeCompare(a.added || "") || a.order - b.order)
+    .slice(0, 8);
 
   const nudge = (d) => rail.current.scrollBy({ left: d * rail.current.clientWidth * 0.8, behavior: "smooth" });
   const onScroll = () => {
@@ -50,11 +55,11 @@ export default function Carousel({ artworks }) {
   };
 
   return (
-    <section className="band band-lav" id="fresh">
+    <section className="band band-lav" id="best-sellers">
       <Wave color="#f3effc" className="wave-top" />
       <div className="section">
         <div className="section-head">
-          <SectionTitle sub="The newest pieces, hot off the easel.">Fresh from the studio</SectionTitle>
+          <SectionTitle sub="The pieces people love the most.">Best sellers</SectionTitle>
           <div className="arrows">
             <button className="round" onClick={() => nudge(-1)} aria-label="Scroll left"><Chevron left /></button>
             <button className="round" onClick={() => nudge(1)} aria-label="Scroll right"><Chevron /></button>

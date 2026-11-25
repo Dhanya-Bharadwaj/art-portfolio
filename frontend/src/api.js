@@ -1,8 +1,9 @@
 // All shop data (names, prices, image links) comes from the backend, which reads ONE file:
 // backend/data/artworks.json  (or Firestore once you switch it on).
-const BASE = import.meta.env.VITE_API_URL || "";
+// Trailing slashes are removed so "https://api.example.com/" and "https://api.example.com" both work.
+const BASE = (import.meta.env.VITE_API_URL || "").trim().replace(/\/+$/, "");
 
-export const DEFAULT_SHOP = { currency: "INR", shipping_fee: 150, free_shipping_over: 0, payment_mode: "demo", razorpay_key_id: "" };
+export const DEFAULT_SHOP = { currency: "INR", shipping_fee: 150, home_state: "Karnataka", shipping_fee_other: 350, free_shipping_over: 0, payment_mode: "demo", razorpay_key_id: "" };
 
 async function request(path, options) {
   const res = await fetch(`${BASE}${path}`, {
@@ -22,6 +23,22 @@ export const getShopConfig = () => request("/api/config").catch(() => DEFAULT_SH
 export const createOrder = (payload) => request("/api/orders", { method: "POST", body: JSON.stringify(payload) });
 export const verifyOrder = (payload) => request("/api/orders/verify", { method: "POST", body: JSON.stringify(payload) });
 export const sendMessage = (payload) => request("/api/contact", { method: "POST", body: JSON.stringify(payload) });
+
+// Quietly tells the shop that someone opened a piece or added it to the cart (this feeds "Best sellers").
+// Each person is counted once per visit for each piece, and a failure is never shown to anyone.
+export function trackEvent(id, event) {
+  try {
+    const key = `seen-${event}-${id}`;
+    if (sessionStorage.getItem(key)) return;
+    sessionStorage.setItem(key, "1");
+  } catch { /* storage unavailable: just send it */ }
+  fetch(`${BASE}/api/track`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id, event }),
+    keepalive: true,
+  }).catch(() => {});
+}
 
 export function loadRazorpay() {
   return new Promise((resolve) => {

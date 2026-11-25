@@ -37,3 +37,20 @@ export function pickFeatured(artworks, n) {
   for (const a of sorted) if (picked.length < n && !picked.includes(a)) picked.push(a);
   return picked.slice(0, n);
 }
+
+export const STATES = [
+  "Andaman and Nicobar Islands", "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chandigarh", "Chhattisgarh",
+  "Dadra and Nagar Haveli and Daman and Diu", "Delhi", "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jammu and Kashmir",
+  "Jharkhand", "Karnataka", "Kerala", "Ladakh", "Lakshadweep", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya",
+  "Mizoram", "Nagaland", "Odisha", "Puducherry", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana", "Tripura",
+  "Uttar Pradesh", "Uttarakhand", "West Bengal",
+];
+
+// The home state (Karnataka) has one shipping rate and every other state has another.
+// Returns null until a state has been chosen. The server works out the same number again when you pay.
+export function shippingFor(shop, state, subtotal) {
+  if (!state) return null;
+  if (shop.free_shipping_over > 0 && subtotal >= shop.free_shipping_over) return 0;
+  const home = (shop.home_state ?? "Karnataka").trim().toLowerCase();
+  return state.trim().toLowerCase() === home ? shop.shipping_fee : (shop.shipping_fee_other ?? 350);
+}

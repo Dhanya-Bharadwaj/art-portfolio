@@ -250,16 +250,89 @@ def get_artworks(fresh: bool = False) -> list[dict]:
         if not fresh and _cache["items"] is not None and now - _cache["at"] < CACHE_SECONDS:
             return _cache["items"]
         docs = [{"id": d.id, **d.to_dict()} for d in _firestore().collection("artworks").stream()]
-        items = sorted((_normalize(a) for a in docs if not a.get("hidden")), key=lambda a: a.get("order", 9999))
+        items = _with_popularity(sorted((_normalize(a) for a in docs if not a.get("hidden")), key=lambda a: a.get("order", 9999)))
         _cache.update(at=now, items=items)
         return items
     sold = _load_state()["sold"]
     items = [{**a, "stock": max(a.get("stock", 1) - sold.get(a["id"], 0), 0)} for a in _base_artworks() if not a.get("hidden")]
-    return [_normalize(a) for a in items]
+    return _with_popularity([_normalize(a) for a in items])
 
 
 def get_artwork(art_id: str) -> dict | None:
     return next((a for a in get_artworks() if a["id"] == art_id), None)
+
+
+# ---------- what people look at (feeds the "Best sellers" row) ----------
+STAT_FIELDS = {"view": "views", "cart": "cart_adds"}   # what the website may report
+POINTS = {"views": 1, "cart_adds": 3, "sold": 10}      # a sale counts far more than a look
+_stats_cache = {"at": 0.0, "items": None}
+
+
+def _empty_stat() -> dict:
+    return {"views": 0, "cart_adds": 0, "sold": 0}
+
+
+def get_stats(fresh: bool = False) -> dict[str, dict]:
+    """{art_id: {views, cart_adds, sold}}. In Firestore mode it is kept for a short while to save reads."""
+    if USE_FIRESTORE:
+        now = time.time()
+        if not fresh and _stats_cache["items"] is not None and now - _stats_cache["at"] < CACHE_SECONDS:
+            return _stats_cache["items"]
+        out = {}
+        for d in _firestore().collection("artwork_stats").stream():
+            out[d.id] = {**_empty_stat(), **{k: int(v) for k, v in d.to_dict().items() if k in POINTS}}
+        _stats_cache.update(at=now, items=out)
+        return out
+    state = _load_state()
+    out = {art_id: {**_empty_stat(), **s} for art_id, s in state.get("stats", {}).items()}
+    for art_id, qty in state["sold"].items():
+        out.setdefault(art_id, _empty_stat())["sold"] = qty
+    return out
+
+
+def _score(stat: dict) -> int:
+    return sum(points * stat.get(field, 0) for field, points in POINTS.items())
+
+
+def _with_popularity(items: list[dict]) -> list[dict]:
+    """Adds one number per piece. If the stats can't be read, the shop still works (everything scores 0)."""
+    try:
+        stats = get_stats()
+    except Exception as exc:  # noqa: BLE001
+        print(f"[stats] could not read: {exc}")
+        stats = {}
+    for a in items:
+        a["popularity"] = _score(stats.get(a["id"], {}))
+    return items
+
+
+def track(art_id: str, event: str) -> None:
+    """Adds one to the 'views' or 'cart_adds' counter of a piece."""
+    field = STAT_FIELDS[event]
+    if USE_FIRESTORE:
+        from firebase_admin import firestore
+
+        _firestore().collection("artwork_stats").document(art_id).set(
+            {field: firestore.Increment(1), "last_seen": _now()}, merge=True
+        )
+        return
+    state = _load_state()
+    stat = state.setdefault("stats", {}).setdefault(art_id, {})
+    stat[field] = stat.get(field, 0) + 1
+    _save_state(state)
+
+
+def record_sales(order: dict) -> None:
+    """Counts the pieces of a freshly paid order as 'sold'. (Local mode already keeps its own count.)"""
+    if not USE_FIRESTORE:
+        return
+    from firebase_admin import firestore
+
+    client = _firestore()
+    for i in order.get("items", []):
+        client.collection("artwork_stats").document(i["id"]).set(
+            {"sold": firestore.Increment(int(i["qty"])), "last_seen": _now()}, merge=True
+        )
 
 
 # ---------- orders ----------

@@ -3,8 +3,7 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import ArtImage from "./ArtImage";
 import Wave from "./Wave";
 import { artist } from "../config";
-import { hasPrice, metaLine, pickFeatured, priceLabel } from "../format";
-import { useCart } from "../cart";
+import { metaLine, pickFeatured } from "../format";
 import { useViewer } from "../viewer";
 
 const DURATION = 5500;
@@ -67,7 +66,6 @@ function Star({ size, color, style, delay, still }) {
 }
 
 export default function HeroSlider({ artworks }) {
-  const { shop } = useCart();
   const { openArt } = useViewer();
   const still = useReducedMotion();
   const slides = useMemo(() => pickFeatured(artworks, 5), [artworks]);
@@ -130,8 +128,7 @@ export default function HeroSlider({ artworks }) {
               <h2>{cur.title}</h2>
               <p>{metaLine(cur)}</p>
               <div className="caption-row">
-                <span className={hasPrice(cur) ? "price" : "price ask"}>{priceLabel(cur, shop.currency)}</span>
-                <button className="add solid" onClick={() => openArt(cur.id)}>View piece</button>
+                <button className="add solid" onClick={() => openArt(cur.id)}>View product</button>
               </div>
             </motion.div>
           </AnimatePresence>

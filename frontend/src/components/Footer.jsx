@@ -12,7 +12,7 @@ export default function Footer() {
         <Reveal delay={0.1} className="foot-cols">
           <div>
             <h4>Shop</h4>
-            <a href="#fresh">New work</a>
+            <a href="#best-sellers">Best sellers</a>
             <a href="#work">Collection</a>
             <a href="#how">How it works</a>
           </div>

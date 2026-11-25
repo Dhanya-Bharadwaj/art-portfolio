@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Shop dashboard</title>
+  <style>
+    :root { --bg: #fbf8ff; --text: #4a4468; --heading: #2f2a4a; --muted: #8a84a6; --line: #ebe4f7; --lavender: #cdbef5; --mint: #bfe8da; --pink: #f8c8dc; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font: 16px/1.6 system-ui, sans-serif; padding: 1.2rem; max-width: 1100px; margin: 0 auto; overflow-x: clip; }
+    h1 { color: var(--heading); font-size: 1.7rem; margin-bottom: 0.2rem; }
+    h2 { color: var(--heading); font-size: 1.2rem; margin: 2rem 0 0.6rem; }
+    .sub { color: var(--muted); margin-bottom: 1.2rem; }
+    .login { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: end; background: #fff; border: 1px solid var(--line); border-radius: 18px; padding: 1rem; }
+    .login label { display: grid; gap: 0.2rem; font-size: 0.85rem; font-weight: 700; flex: 1 1 240px; min-width: 0; }
+    .login input { font: inherit; padding: 0.6rem 0.8rem; border: 1.5px solid var(--line); border-radius: 12px; width: 100%; }
+    .btn { font: inherit; font-weight: 700; padding: 0.65rem 1.4rem; border: 0; border-radius: 999px; background: var(--lavender); color: var(--heading); cursor: pointer; }
+    .msg { margin-top: 0.8rem; min-height: 1.5em; font-weight: 600; }
+    .msg.bad { color: #c0577e; }
+    .box { background: #fff; border: 1px solid var(--line); border-radius: 18px; overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; min-width: 560px; }
+    th, td { text-align: left; padding: 0.65rem 0.9rem; border-bottom: 1px solid var(--line); vertical-align: top; font-size: 0.93rem; }
+    th { color: var(--muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; }
+    tr:last-child td { border-bottom: 0; }
+    .num { text-align: right; white-space: nowrap; }
+    .bar { height: 8px; border-radius: 99px; background: var(--line); min-width: 80px; }
+    .bar i { display: block; height: 100%; border-radius: 99px; background: var(--lavender); }
+    .tag { display: inline-block; padding: 0.05rem 0.6rem; border-radius: 99px; font-size: 0.8rem; font-weight: 700; background: var(--line); }
+    .tag.paid { background: var(--mint); }
+    .tag.needs_attention { background: var(--pink); }
+    .muted { color: var(--muted); }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <h1>Shop dashboard</h1>
+  <p class="sub">Only you can see this. Enter your admin token to load it.</p>
+
+  <div class="login">
+    <label>Backend address
+      <input id="api" value="https://dcolorheist-backend.vercel.app" autocomplete="off" />
+    </label>
+    <label>Admin token
+      <input id="token" type="password" autocomplete="off" />
+    </label>
+    <button class="btn" id="go">Load</button>
+  </div>
+  <p class="msg" id="msg" role="status"></p>
+
+  <div id="out" class="hidden">
+    <h2>What people are looking at</h2>
+    <p class="sub">Views count once per visitor per visit. Sold counts pieces bought. The score is views + 3 × cart adds + 10 × sold.</p>
+    <div class="box"><table id="stats"></table></div>
+
+    <h2>Orders</h2>
+    <div class="box"><table id="orders"></table></div>
+  </div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const rupees = (n) => "₹" + Number(n || 0).toLocaleString("en-IN");
+
+    // builds a table from plain values, so nothing a customer typed is ever treated as HTML
+    function fill(table, heads, rows) {
+      table.replaceChildren();
+      const hr = table.insertRow();
+      heads.forEach(([label, cls]) => { const th = document.createElement("th"); th.textContent = label; if (cls) th.className = cls; hr.appendChild(th); });
+      if (!rows.length) {
+        const td = table.insertRow().insertCell(); td.colSpan = heads.length; td.className = "muted"; td.textContent = "Nothing here yet."; return;
+      }
+      rows.forEach((cells) => {
+        const tr = table.insertRow();
+        cells.forEach((c, i) => {
+          const td = tr.insertCell();
+          if (heads[i][1]) td.className = heads[i][1];
+          if (c instanceof Node) td.appendChild(c); else td.textContent = c;
+        });
+      });
+    }
+    const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; };
+
+    async function get(path) {
+      const base = $("api").value.trim().replace(/\/+$/, "");
+      const res = await fetch(base + path, { headers: { "X-Admin-Token": $("token").value } });
+      if (res.status === 403) throw new Error("That token isn't right.");
+      if (!res.ok) throw new Error("The server answered with an error (" + res.status + ").");
+      return res.json();
+    }
+
+    $("go").onclick = async () => {
+      const msg = $("msg"); msg.className = "msg"; msg.textContent = "Loading…";
+      try {
+        const [stats, orders] = await Promise.all([get("/api/admin/stats"), get("/api/admin/orders")]);
+        const top = Math.max(1, ...stats.map((r) => r.score));
+        fill($("stats"), [["Piece"], ["Views", "num"], ["In cart", "num"], ["Sold", "num"], ["Score", "num"], [""]],
+          stats.map((r) => {
+            const bar = el("div", "bar"); const fillBar = el("i"); fillBar.style.width = Math.round((r.score / top) * 100) + "%"; bar.appendChild(fillBar);
+            return [r.title, r.views, r.cart_adds, r.sold, r.score, bar];
+          }));
+        fill($("orders"), [["When"], ["Order"], ["Status"], ["Customer"], ["Items"], ["Total", "num"]],
+          orders.map((o) => {
+            const c = o.customer || {};
+            return [
+              new Date(o.created_at).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" }),
+              o.order_id,
+              el("span", "tag " + o.status, o.status === "paid" ? "paid" : o.status === "needs_attention" ? "needs a refund" : "not paid"),
+              [c.name, c.phone, c.city + ", " + c.state].filter(Boolean).join(" · "),
+              (o.items || []).map((i) => i.title + " × " + i.qty).join(", "),
+              rupees(o.total),
+            ];
+          }));
+        $("out").classList.remove("hidden");
+        msg.textContent = "";
+      } catch (e) {
+        msg.className = "msg bad"; msg.textContent = e.message || "Couldn't load. Check the address and your connection.";
+      }
+    };
+  </script>
+</body>
+</html>

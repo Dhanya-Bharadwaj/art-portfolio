@@ -19,7 +19,7 @@ const TABS = [
 
 // Thumb-friendly navigation for phones (hidden on bigger screens by CSS).
 export default function MobileBar() {
-  const { count, total, shop, openCart, startCheckout } = useCart();
+  const { count, subtotal, shop, openCart, startCheckout } = useCart();
   const [active, setActive] = useState("home");
 
   useEffect(() => {
@@ -28,7 +28,7 @@ export default function MobileBar() {
       raf = 0;
       const line = window.innerHeight * 0.6;
       const top = (id) => document.getElementById(id)?.getBoundingClientRect().top ?? Infinity;
-      setActive(top("contact") < line ? "contact" : top("fresh") < line ? "shop" : "home");
+      setActive(top("contact") < line ? "contact" : top("best-sellers") < line ? "shop" : "home");
     };
     const onScroll = () => { if (!raf) raf = requestAnimationFrame(calc); };
     calc();
@@ -45,7 +45,7 @@ export default function MobileBar() {
             initial={{ y: 30, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 30, opacity: 0 }}
             transition={{ type: "spring", stiffness: 380, damping: 28 }}
           >
-            <span>{count} {count === 1 ? "item" : "items"} · {money(total, shop.currency)}</span>
+            <span>{count} {count === 1 ? "item" : "items"} · {money(subtotal, shop.currency)}</span>
             <span className="cta-go">Checkout</span>
           </motion.button>
         )}

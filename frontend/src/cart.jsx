@@ -1,4 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { trackEvent } from "./api";
+import { shippingFor } from "./format";
 
 const Ctx = createContext(null);
 export const useCart = () => useContext(Ctx);
@@ -18,6 +20,7 @@ export function CartProvider({ artworks, shop, children }) {
   const [items, setItems] = useState(load);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [shipState, setShipState] = useState(""); // chosen at checkout; decides the shipping charge
 
   useEffect(() => {
     try { localStorage.setItem(KEY, JSON.stringify(items)); } catch { /* storage unavailable */ }
@@ -36,12 +39,15 @@ export function CartProvider({ artworks, shop, children }) {
   const count = lines.reduce((n, l) => n + l.qty, 0);
   const subtotal = lines.reduce((n, l) => n + l.qty * l.art.price, 0);
   const freeShip = shop.free_shipping_over > 0 && subtotal >= shop.free_shipping_over;
-  const shipping = lines.length === 0 || freeShip ? 0 : shop.shipping_fee;
+  const fee = shipState ? shippingFor(shop, shipState, subtotal) : null;
+  const shippingKnown = lines.length === 0 || freeShip || fee !== null; // false until a state is chosen
+  const shipping = lines.length === 0 || freeShip ? 0 : fee ?? 0;
   const total = subtotal + shipping;
 
   const maxFor = (art) => Math.min(art.stock, MAX_QTY);
 
   const add = useCallback((art) => {
+    trackEvent(art.id, "cart");
     setItems((prev) => {
       const cur = prev.find((i) => i.id === art.id);
       const qty = Math.min((cur ? cur.qty : 0) + 1, Math.min(art.stock, MAX_QTY));
@@ -55,7 +61,7 @@ export function CartProvider({ artworks, shop, children }) {
   const clear = () => setItems([]);
 
   const value = {
-    shop, lines, count, subtotal, shipping, total, freeShip, maxFor,
+    shop, lines, count, subtotal, shipping, shippingKnown, shipState, setShipState, total, freeShip, maxFor,
     add, setQty, remove, clear,
     drawerOpen, openCart: () => setDrawerOpen(true), closeCart: () => setDrawerOpen(false),
     checkoutOpen, closeCheckout: () => setCheckoutOpen(false),

@@ -21,12 +21,13 @@
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
-html { scroll-behavior: smooth; scroll-padding-top: 5rem; }
+html { scroll-behavior: smooth; scroll-padding-top: 5rem; overflow-x: hidden; overflow-x: clip; }
 body {
   background: var(--bg); color: var(--text);
   font-family: var(--body); font-size: clamp(1rem, 0.96rem + 0.18vw, 1.15rem); line-height: 1.7;
-  overflow-x: hidden;
+  overflow-x: hidden; overflow-x: clip; /* "clip" also works on phones and keeps sticky bars working */
 }
+main { overflow-x: clip; }
 img, svg { max-width: 100%; }
 a { color: inherit; }
 button { font: inherit; color: inherit; cursor: pointer; }
@@ -604,3 +605,63 @@ a.add { display: inline-flex; align-items: center; justify-content: center; text
   .slide-arrow { width: 38px; height: 38px; margin-top: -19px; }
   .thumb-btn { width: 52px; height: 52px; }
 }
+
+/* =====================================================================
+   NOVEMBER UPDATE
+   1) nothing may push the page wider than the screen (phones to big monitors)
+   2) shipping by state + the state dropdown
+   3) the hero's single "View product" button
+   ===================================================================== */
+
+/* 1) no sideways scrolling */
+html, body { max-width: 100%; }
+.hero-text, .deck-wrap, .about-text, .contact-intro, .form-card, .step { min-width: 0; }
+.contact-intro a, .contact-intro p, .about-text p, .policy p, .lb-info p, .step p { overflow-wrap: anywhere; }
+
+@media (max-width: 1000px) {
+  /* a plain 1fr column grows to fit its widest child; minmax(0, 1fr) lets it shrink to the screen instead */
+  .hero-grid, .about-grid, .contact-grid { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (max-width: 700px) {
+  .foot-big { font-size: 12vw; }
+}
+
+/* small phones (Galaxy A-series, Redmi, older iPhones): the slider controls must fit the screen */
+@media (max-width: 420px) {
+  .deck-wrap { padding-right: 18px; }
+  .deck-controls { gap: 0.6rem; max-width: 100%; }
+  .dots { gap: 0.3rem; }
+  .dot { width: 16px; }
+  .dot.active { width: 36px; }
+  .deck-controls .round { width: 42px; height: 42px; }
+}
+@media (max-width: 360px) {
+  .nav-name { font-size: 1rem; }
+  .btn { padding-left: 1.3rem; padding-right: 1.3rem; }
+  .stats { gap: 0.4rem; }
+  .stat { padding: 0.9rem 0.6rem; }
+  .stat strong { font-size: 1.8rem; }
+  .cat-info h3 { font-size: 0.92rem; }
+}
+
+/* big monitors: scale up instead of leaving a small island in the middle */
+@media (min-width: 2400px) {
+  html { font-size: 128%; }
+  .section { max-width: 1800px; }
+  .masonry { columns: 360px; }
+}
+
+/* 2) shipping by state */
+.fields select {
+  font: inherit; font-size: 1rem; color: var(--text); background: var(--bg);
+  border: 1.5px solid var(--line); border-radius: 14px; padding: 0.75rem 0.9rem; min-height: 46px; width: 100%;
+}
+.fields select:focus { outline: none; border-color: var(--lavender); box-shadow: 0 0 0 4px rgba(205, 190, 245, 0.35); }
+.ship-note { color: var(--muted); font-size: 0.9rem; line-height: 1.5; margin: -0.3rem 0 1rem; }
+@media (max-width: 700px) {
+  .fields select { font-size: 16px; } /* stops iOS zooming in on focus */
+}
+
+/* 3) hero caption: just the button, centred */
+.caption-row { justify-content: center; }

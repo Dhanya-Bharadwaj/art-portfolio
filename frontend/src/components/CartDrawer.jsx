@@ -19,7 +19,7 @@ function useMobile() {
 
 // Slides in from the right on bigger screens; a swipe-down bottom sheet on phones.
 export default function CartDrawer() {
-  const { drawerOpen, closeCart, lines, count, subtotal, shipping, total, freeShip, shop, setQty, remove, startCheckout, maxFor } = useCart();
+  const { drawerOpen, closeCart, lines, count, subtotal, shipping, shippingKnown, total, freeShip, shop, setQty, remove, startCheckout, maxFor } = useCart();
   const mobile = useMobile();
   const controls = useDragControls();
 
@@ -89,9 +89,14 @@ export default function CartDrawer() {
                 <footer className="drawer-foot">
                   <dl className="totals">
                     <div><dt>Subtotal ({count})</dt><dd>{m(subtotal)}</dd></div>
-                    <div><dt>Shipping</dt><dd>{freeShip ? "Free" : m(shipping)}</dd></div>
-                    <div className="grand"><dt>Total</dt><dd>{m(total)}</dd></div>
+                    <div><dt>Shipping</dt><dd>{freeShip ? "Free" : shippingKnown ? m(shipping) : "At checkout"}</dd></div>
+                    {shippingKnown && <div className="grand"><dt>Total</dt><dd>{m(total)}</dd></div>}
                   </dl>
+                  {!shippingKnown && (
+                    <p className="ship-note">
+                      Shipping is {m(shop.shipping_fee)} within {shop.home_state ?? "Karnataka"} and {m(shop.shipping_fee_other ?? 350)} to other states. You'll choose your state at checkout.
+                    </p>
+                  )}
                   <button className="btn wide" onClick={startCheckout}>Checkout</button>
                 </footer>
               </>

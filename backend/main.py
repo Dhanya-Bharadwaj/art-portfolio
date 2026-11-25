@@ -162,17 +162,28 @@
 import os
 import secrets
 import uuid
+from typing import Literal
 
 from fastapi import FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
 import db
+import notify
 import payments
 
-SHIPPING_FEE = int(os.getenv("SHIPPING_FEE", "150"))
+HOME_STATE = os.getenv("HOME_STATE", "Karnataka").strip()
+SHIPPING_FEE = int(os.getenv("SHIPPING_FEE", "150"))                # parcels inside HOME_STATE
+SHIPPING_FEE_OTHER = int(os.getenv("SHIPPING_FEE_OTHER", "350"))    # parcels to every other state
 FREE_SHIPPING_OVER = int(os.getenv("FREE_SHIPPING_OVER", "0"))  # 0 = never free
 ADMIN_TOKEN = os.getenv("ADMIN_TOKEN", "")
+
+
+def shipping_for(state: str, subtotal: int) -> int:
+    """The server works out shipping itself, so nobody can change it from their browser."""
+    if FREE_SHIPPING_OVER and subtotal >= FREE_SHIPPING_OVER:
+        return 0
+    return SHIPPING_FEE if state.strip().casefold() == HOME_STATE.casefold() else SHIPPING_FEE_OTHER
 
 app = FastAPI(title="Art Shop API")
 app.add_middleware(
@@ -210,10 +221,23 @@ class VerifyIn(BaseModel):
     razorpay_signature: str = ""
 
 
+class TrackIn(BaseModel):
+    id: str = Field(min_length=1, max_length=120)
+    event: Literal["view", "cart"]
+
+
 class ContactIn(BaseModel):
     name: str = Field(min_length=1, max_length=80)
     email: str = Field(min_length=3, max_length=120)
     message: str = Field(min_length=1, max_length=2000)
+
+
+def _safely(fn, *args):
+    """Alerts and counters are nice to have. If one breaks, the order or message itself must still go through."""
+    try:
+        fn(*args)
+    except Exception as exc:  # noqa: BLE001
+        print(f"[{getattr(fn, '__name__', 'task')}] skipped: {type(exc).__name__}: {exc}")
 
 
 @app.get("/api/health")
@@ -226,6 +250,8 @@ def shop_config():
     return {
         "currency": payments.CURRENCY,
         "shipping_fee": SHIPPING_FEE,
+        "home_state": HOME_STATE,
+        "shipping_fee_other": SHIPPING_FEE_OTHER,
         "free_shipping_over": FREE_SHIPPING_OVER,
         "payment_mode": payments.MODE,
         "razorpay_key_id": payments.KEY_ID if payments.MODE == "razorpay" else "",
@@ -264,7 +290,7 @@ def create_order(body: OrderIn):
         lines.append({"id": art["id"], "title": art["title"], "price": art["price"], "qty": it.qty})
 
     subtotal = sum(l["price"] * l["qty"] for l in lines)
-    shipping = 0 if FREE_SHIPPING_OVER and subtotal >= FREE_SHIPPING_OVER else SHIPPING_FEE
+    shipping = shipping_for(body.customer.state, subtotal)
     total = subtotal + shipping
     order_id = "ORD-" + uuid.uuid4().hex[:8].upper()
 
@@ -295,8 +321,19 @@ def verify_order(body: VerifyIn):
         raise HTTPException(400, "Payment could not be verified.")
     order, ok = db.mark_paid(body.order_id, body.razorpay_payment_id or "demo")
     if not ok:
+        _safely(notify.order_needs_attention, order)
         raise HTTPException(409, "Sorry, this piece was just bought by someone else. Your payment will be refunded.")
+    _safely(db.record_sales, order)
+    _safely(notify.order_paid, order)
     return {"ok": True, "order_id": order["order_id"]}
+
+
+@app.post("/api/track")
+def track(body: TrackIn):
+    """The website reports that someone opened a piece or added it to the cart."""
+    if db.get_artwork(body.id):
+        _safely(db.track, body.id, body.event)
+    return {"ok": True}
 
 
 @app.post("/api/contact")
@@ -311,6 +348,7 @@ def contact(body: ContactIn):
     else:
         with open(db.DATA_DIR / "messages.jsonl", "a", encoding="utf-8") as f:
             f.write(json.dumps(record) + "\n")
+    _safely(notify.contact_message, record)  # lands in your inbox
     return {"ok": True}
 
 
@@ -319,3 +357,20 @@ def admin_orders(x_admin_token: str = Header(default="")):
     if not ADMIN_TOKEN or not secrets.compare_digest(x_admin_token, ADMIN_TOKEN):
         raise HTTPException(403, "Forbidden")
     return db.list_orders()
+
+
+@app.get("/api/admin/stats")
+def admin_stats(x_admin_token: str = Header(default="")):
+    """Which pieces people look at, add to the cart and buy. Most popular first."""
+    if not ADMIN_TOKEN or not secrets.compare_digest(x_admin_token, ADMIN_TOKEN):
+        raise HTTPException(403, "Forbidden")
+    stats = db.get_stats(fresh=True)
+    rows = []
+    for a in db.get_artworks():
+        s = stats.get(a["id"], {})
+        rows.append({
+            "id": a["id"], "title": a["title"], "category": a.get("category", ""),
+            "views": s.get("views", 0), "cart_adds": s.get("cart_adds", 0), "sold": s.get("sold", 0),
+            "score": a.get("popularity", 0),
+        })
+    return sorted(rows, key=lambda r: r["score"], reverse=True)

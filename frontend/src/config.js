@@ -9,7 +9,7 @@ export const artist = {
   ],
   statement:
     "Every piece starts with a colour I can't stop thinking about, then slowly becomes something you can live with on your wall.",
-  email: "dhanyabharadwaj2403@gmail.com",
+  email: "dcolorheist@gmail.com",
   instagram: "https://instagram.com/dcolorheist",
 };
 
@@ -17,7 +17,7 @@ export const artist = {
 export const policies = [
   {
     title: "Shipping",
-    text: "Orders ship within 5 to 7 working days after payment. Originals are wrapped flat and prints go out in a sturdy tube.",
+    text: "Orders ship within 5 to 7 working days after payment. Originals are wrapped flat and prints go out in a sturdy tube. Shipping is ₹150 within Karnataka and ₹350 to other states.",
   },
   {
     title: "Returns",

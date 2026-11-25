@@ -1,6 +1,7 @@
-import { createContext, useCallback, useContext, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { AnimatePresence } from "framer-motion";
 import Lightbox from "./components/Lightbox";
+import { trackEvent } from "./api";
 
 const Ctx = createContext(null);
 export const useViewer = () => useContext(Ctx);
@@ -9,6 +10,9 @@ export function ViewerProvider({ artworks, children }) {
   const [id, setId] = useState(null);
   const [dir, setDir] = useState(1);
   const index = artworks.findIndex((a) => a.id === id);
+
+  // every piece someone opens (or flips to with Next / Previous) counts as one view
+  useEffect(() => { if (id) trackEvent(id, "view"); }, [id]);
 
   const close = useCallback(() => setId(null), []);
   const step = useCallback(
